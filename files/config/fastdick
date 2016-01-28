@@ -1,0 +1,7 @@
+
+config entry 'setting'
+	option name ''
+	option passwd ''
+	option enabled '0'
+	option passwd_md5 ''
+

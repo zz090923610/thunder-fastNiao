@@ -1,0 +1,231 @@
+#!/bin/ash
+
+
+
+
+generate_pwd_rsa_hex()
+{
+	#first, encoding passwd using rsa
+	a=`echo -n "$passwd_md5" | openssl rsautl -raw -pubin -inkey pub.key  -hexdump | tr -d " " | tr [a-z] [A-Z]`
+	for pos in 5 60 115 170 225 280 335 390
+	do
+		pwd_rsa_hex="$pwd_rsa_hex"${a:$pos:16}${a:$(($pos+17)):16}
+	done
+	echo "$pwd_rsa_hex"
+}
+
+get_self_netinfo()
+{
+	info_json=`curl http://api.portal.swjsq.vip.xunlei.com:81/v2/queryportal 2>/dev/null`
+	errno=`echo "$info_json" | jq -r ".errno"`
+	if [ "$errno" -ne 0 ]
+	then #mean's something not right
+		exit 1
+	fi
+	interface_ip=`echo "$info_json" | jq -r ".interface_ip"`
+	interface_port=`echo "$info_json" | jq -r ".interface_port"`
+}
+
+get_wrap_wan_macaddr()
+{
+	wan_iface=`uci -P /var/state get network.wan.device`
+	wan_mac="$(ifconfig "$wan_iface" | awk '/HWaddr/ { print $5 }')"
+	wrap_wan_mac=`echo -n "$wan_mac" | tr -d ':'`004V
+	echo -n "$wrap_wan_mac"
+}
+
+generate_req_body()
+{
+        pwd_rsa_hex=$(generate_pwd_rsa_hex)
+        wrap_wan_macaddr=$(get_wrap_wan_macaddr)
+	body="{\
+\"protocolVersion\": 101,\
+\"sequenceNo\": 1000001,\
+\"platformVersion\": 1,\
+\"peerID\": \"$wrap_wan_macaddr\",\
+\"businessType\": 68,\
+\"clientVersion\": \"1.1\",\
+\"isCompressed\": 0,\
+\"cmdID\": 1,\
+\"userName\": \"$name\",\
+\"passWord\": \"$pwd_rsa_hex\",\
+\"loginType\": \"$TYPE_NORMAL_ACCOUNT\",\
+\"sessionID\": \"\",\
+\"verifyKey\": \"\",\
+\"verifyCode\": \"\",\
+\"appName\": \"ANDROID-com.xunlei.vip.swjsq\",\
+\"rsaKey\": {\
+\"e\": \"$e\",\
+\"n\": \"$n\"\
+},\
+\"extensionList\": \"\"\
+}"
+
+echo -n "$body"
+}
+
+
+
+thunder_login()
+{
+	echo $(generate_req_body) > /tmp/req_body
+	
+	url_login="https://login.mobile.reg2t.sandai.net:443"
+	login_header='-H "Content-Type:" \
+				  -H "Connection:Keep-Alive" \
+				  -H "Accept-Encoding:gzip" \
+				  -H "User-Agent:android-async-http/1.4.3 (http://loopj.com/android-async-http)"'
+login_result=`curl --insecure "$login_header" \
+--data @/tmp/req_body "$url_login" 2>/dev/null`
+echo -n "$login_result"
+}
+
+speed_up_api()# 1,command;2,userID;3,sessionID
+{
+	wrap_mac=$(get_wrap_wan_macaddr)
+	api_url=http://"$interface_ip":"$interface_port"/v2/"$1"?peerid="$wrap_mac"\&userid="$2"\&user_type=1\&sessionid="$sessionID"
+
+	api_header='-H "Content-Type:" \
+			"Connection: Keep-Alive" \
+			"Accept-Encoding: gzip" \
+    			"User-Agent: Dalvik/2.1.0 (Linux; U; Android 5.0.1; SmallRice Build/LRX22C)"'
+	api_result=`curl --insecure "$api_header" "$api_url" 2>/dev/null`
+	echo -n "$api_result"
+}
+
+sigterm()           
+{
+        echo "Quit"
+	rm /var/state/fastdick
+        if [ "$is_speedup" -eq 0 ]
+        then
+                exit
+        else
+                $(speed_up_api "recover" "$userID" "$sessionID")
+                exit
+        fi
+}
+
+
+
+# script __main__
+
+# fetch basic info
+name=`uci get fastdick.setting.name 2>/dev/null`
+passwd=`uci get fastdick.setting.passwd 2>/dev/null`
+passwd_md5=`uci get fastdick.setting.passwd_md5 2>/dev/null`
+interface_ip=''
+interface_port=''
+TYPE_NORMAL_ACCOUNT=0
+n="D6F1CFBF4D9F70710527E1B1911635460B1FF9AB7C202294D04A6F135A906E90E2398123C234340A3CEA0E5EFDCB4BCF7C613A5A52B96F59871D8AB9D240ABD4481CCFD758EC3F2FDD54A1D4D56BFFD5C4A95810A8CA25E87FDC752EFA047DF4710C7D67CA025A2DC3EA59B09A9F2E3A41D4A7EFBB31C738B35FFAAA5C6F4E6F"
+e="10001"
+sessionID=''
+userID=''
+is_speedup=0
+
+
+
+touch /var/state/fastdick
+uci -P /var/state set fastdick.pid=$$
+uci -P /var/state commit fastdick
+
+# calculate passwd_md5
+
+if [ `echo -n "$passwd_md5" | wc -c` -eq 0 ]
+	then
+	echo "need to update md5"
+	passwd_md5=`echo -n "$passwd" | md5sum | tr -d " -"`
+	uci set fastdick.setting.passwd_md5="$passwd_md5" 2>/dev/null
+	uci commit fastdick 2>/dev/null
+fi
+
+
+
+trap 'sigterm' TERM
+trap 'sigterm' INT
+
+
+login_result=$(thunder_login)
+sessionID=`echo "$login_result" | jq -r ".sessionID"`
+if [ `echo -n "$sessionID" | wc -c` -ne 32 ]
+then
+	echo "Login Failed"
+	exit
+fi
+echo "Login Success"
+
+isVIP=`echo "$login_result" | jq -r ".isVip"`
+if [ "$isVIP" -ne 1 ]
+then
+	ehco "Sorry you are not a VIP"
+	exit
+fi
+echo "Welcome VIP"
+
+userID=`echo "$login_result" | jq -r ".userID"`
+interface_ip=`echo "$login_result" | jq -r ".userID"`
+get_self_netinfo
+speedup_check=$(speed_up_api "bandwidth" "$userID" "$sessionID")
+
+can_upgrade=`echo "$speedup_check" | jq -r ".can_upgrade"`
+
+if [ "$can_upgrade" -ne 1 ]
+then
+	echo "Your network doesn't support speedup"
+	exit
+fi
+
+# now let's speedup
+
+loop=0
+speedup_result=$(speed_up_api "upgrade" "$userID" "$sessionID")
+status=`echo "$speedup_result" | jq -r ".errno"`
+if [ "$status" -eq 0 ]
+	then
+		echo speedup success
+		is_speedup=1
+	else
+		echo errno "$status"
+		is_speedup=0
+	fi
+	uci -P /var/state set fastdick.errno="$status"
+	uci -P /var/state set fastdick.message=`echo -n "$speedup_result" | jq -r ".message"`
+	uci -P /var/state commit fastdick
+while true; do
+	sleep 295
+	if [ "$loop" -eq 5 ]
+	then
+		loop=0
+		speedup_result=$(speed_up_api "recover" "$userID" "$sessionID")
+		sleep 5
+		speedup_result=$(speed_up_api "upgrade" "$userID" "$sessionID")
+        status=`echo "$speedup_result" | jq -r ".errno"`
+        if [ "$status" -eq 0 ]
+	    then
+            echo re-speedup success
+	    is_speedup=1
+        else
+               echo errno "$status"
+		is_speedup=0
+        fi
+        uci -P /var/state set fastdick.errno="$status"
+		uci -P /var/state set fastdick.message=`echo -n "$speedup_result" | jq -r ".message"`
+		uci -P /var/state commit fastdick
+
+	else
+		loop=$(($loop+1))
+		speedup_result=$(speed_up_api "keepalive" "$userID" "$sessionID")
+        status=`echo "$speedup_result" | jq -r ".errno"`
+        if [ "$status" -eq 0 ]
+        then
+        	    echo keepalive "$loop"
+			is_speedup=1
+        else
+        	    echo errno "$status"
+			is_speedup=0
+	    fi
+		uci -P /var/state set fastdick.errno="$status"
+		uci -P /var/state set fastdick.message=`echo -n "$speedup_result" | jq -r ".message"`
+		uci -P /var/state commit fastdick
+	fi
+done

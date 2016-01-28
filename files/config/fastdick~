@@ -1,0 +1,7 @@
+
+config entry 'setting'
+	option name '610153443@qq.com'
+	option passwd 'zz90q9d3'
+	option enabled '1'
+	option passwd_md5 'd36d032e463a9196a8d43d585ff679ed'
+

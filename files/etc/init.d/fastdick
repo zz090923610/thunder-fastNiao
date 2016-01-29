@@ -1,18 +1,19 @@
 #!/bin/sh /etc/rc.common
 
 START=99
-STOP=99
+APP=fastdick
+SERVICE_WRITE_PID=1
+SERVICE_DAEMONIZE=1
 
 start()
 {
-	enabled=`uci get fastdick.setting.enabled`
+	enabled=`uci get fastdick.setting.enabled 2>/dev/null`
 	if [ "$enabled" -ne 1 ]
 		then
 		rm -rf /var/state/fastdick
 		exit
 	fi
-	mkdir -p /tmp/thunder_fastdick/
-	/usr/bin/fastdick 2>>/tmp/thunder_fastdick/thunder_fastdick_log &
+	service_start /usr/bin/fastdick
 }
 
 stop()
@@ -23,9 +24,22 @@ stop()
 		if [ "$pid" -gt 0 ]
 		then
 			kill "$pid"
-			sleep 15
+			cd /proc
+			for cpid in [0-9]*
+			do
+			        if grep "PPid:	$pid" $cpid/status &>/dev/null
+			        then
+			                echo $cpid
+			                name=`cat $cpid/status | grep "Name:" | sed 's/Name://' | tr -d ' \n\t'`
+			                if [ "$name" = "sleep" ]
+			                then
+			                        kill $cpid
+			                fi
+			        fi
+			done			
 		fi
 	fi
+	rm -rf /var/state/fastdick
 
 }
 
@@ -33,18 +47,4 @@ restart()
 {
 	stop
 	start
-}
-
-enable()
-{
-	uci set fastdick.setting.enabled=1
-	uci commit fastdick
-}
-
-disable()
-{
-	uci set fastdick.setting.enabled=0
-	uci commit fastdick
-	stop
-	rm -rf /tmp/thunder_fastdick
 }

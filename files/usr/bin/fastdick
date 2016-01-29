@@ -1,6 +1,6 @@
 #!/bin/ash
-
-
+mkdir -p /tmp/thunder_fastdick/
+exec 2>/tmp/thunder_fastdick/thunder_fastdick_log
 flush_log()
 {
 	if [ `cat /tmp/thunder_fastdick/thunder_fastdick_log | wc -l` -gt 100 ]

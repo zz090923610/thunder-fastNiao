@@ -49,7 +49,10 @@ define Package/thunder-fastdick/install
 	$(INSTALL_CONF) ./files/etc/config/fastdick $(1)/etc/config/
 	$(INSTALL_CONF) ./files/etc/thunder.key $(1)/etc/
 
-
 endef
+define Package/thunder-fastdick/postinst
+#!/bin/sh
+endef
+
 
 $(eval $(call BuildPackage,thunder-fastdick))

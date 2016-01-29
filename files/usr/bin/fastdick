@@ -229,39 +229,7 @@ if [ "$status" -eq 0 ]
 		echo "$speedup_result" > /tmp/thunder_fastdick/thunder_error_$$
 	fi
 while true; do
-	# first sleep 295s, doing below will resopnse faster after been killed
-	# if sleep 295, when sending kill pid the script will hang until sleep 295 finished
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 10
-	sleep 5
-	#end of sleep 295s
+	sleep 295
 	if [ "$loop" -eq 5 ]
 	then
 		$(flush_log)

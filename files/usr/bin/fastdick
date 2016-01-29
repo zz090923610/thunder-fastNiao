@@ -1,6 +1,16 @@
 #!/bin/ash
 
 
+flush_log()
+{
+	if [ `cat /tmp/thunder_fastdick/thunder_fastdick_log | wc -l` -gt 100 ]
+		then
+			echo '' > /tmp/thunder_fastdick/thunder_fastdick_log
+	fi
+
+}
+
+
 log()
 {
 	logger -s "Thunder FastNiao" "$1"
@@ -82,7 +92,7 @@ echo -n "$body"
 
 thunder_login()
 {
-	echo $(generate_req_body) > /tmp/thunder_req_body
+	echo $(generate_req_body) > /tmp/thunder_fastdick/thunder_req_body
 	
 	url_login="https://login.mobile.reg2t.sandai.net:443"
 	login_header='-H "Content-Type:" \
@@ -91,7 +101,7 @@ thunder_login()
 				  -H "User-Agent:android-async-http/1.4.3 (http://loopj.com/android-async-http)"'
 	$(log "Trying login")
 	login_result=`curl --insecure "$login_header" \
---data @/tmp/thunder_req_body "$url_login" 2>/dev/null`
+--data @/tmp/thunder_fastdick/thunder_req_body "$url_login" 2>/dev/null`
 	echo -n "$login_result"
 }
 
@@ -109,10 +119,11 @@ speed_up_api()# 1,command;2,userID;3,sessionID
 	echo -n "$api_result"
 }
 
+
 sigterm()           
 {
-    $(log "Quit")
-	rm /var/state/fastdick
+    $(log "Quit")	
+
     if [ "$is_speedup" -eq 0 ]
     then
         exit
@@ -134,15 +145,21 @@ err_exit()
 
 
 # script __main__
+trap 'sigterm' TERM
+trap 'sigterm' INT
 
+mkdir -p /tmp/thunder_fastdick
 # fetch basic info
 name=`uci get fastdick.setting.name 2>/dev/null`
 passwd=`uci get fastdick.setting.passwd 2>/dev/null`
-
-if [ `echo -n "$name" | wc -c` -eq 0 ]
+enabled=`uci get fastdick.setting.enabled 2>/dev/null`
+if [ "$enabled" -ne 1 ]
 	then
-	uci set fastdick.setting.enabled=0
-	uci commit fastdick
+	exit
+fi
+
+if [ `echo -n "$name" | wc -c` -eq 0 -o `echo -n "$passwd" | wc -c` -eq 0 ]
+	then
 	$(err_exit)
 fi
 
@@ -164,14 +181,6 @@ is_speedup=0
 touch /var/state/fastdick
 uci -P /var/state set fastdick.pid=$$
 uci -P /var/state commit fastdick
-
-
-
-
-
-
-trap 'sigterm' TERM
-trap 'sigterm' INT
 
 
 login_result=$(thunder_login)
@@ -217,7 +226,7 @@ if [ "$status" -eq 0 ]
 		is_speedup=0
 		error_desc=$(json_read "$speedup_result" "message")
 		$(log err-desc:"$error_desc") 
-		echo "$speedup_result" > /tmp/thunder_error_$$
+		echo "$speedup_result" > /tmp/thunder_fastdick/thunder_error_$$
 	fi
 while true; do
 	# first sleep 295s, doing below will resopnse faster after been killed
@@ -255,6 +264,7 @@ while true; do
 	#end of sleep 295s
 	if [ "$loop" -eq 5 ]
 	then
+		$(flush_log)
 		loop=0
 		speedup_result=$(speed_up_api "recover" "$userID" "$sessionID")
 		sleep 5

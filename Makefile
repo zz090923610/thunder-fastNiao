@@ -38,7 +38,18 @@ define Build/Compile
 endef
 
 define Package/thunder-fastdick/install
-$(CP) ./files/* $(1)
+#$(CP) ./files/* $(1)
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_DIR) $(1)/etc/config
+	$(INSTALL_DIR) $(1)/etc/init.d
+
+	
+	$(INSTALL_BIN) ./files/usr/bin/fastdick $(1)/usr/bin/
+	$(INSTALL_BIN) ./files/etc/init.d/fastdick $(1)/etc/init.d/
+	$(INSTALL_CONF) ./files/etc/config/fastdick $(1)/etc/config/
+	$(INSTALL_CONF) ./files/etc/thunder.key $(1)/etc/
+
+
 endef
 
 $(eval $(call BuildPackage,thunder-fastdick))

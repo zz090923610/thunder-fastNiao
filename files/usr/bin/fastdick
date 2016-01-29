@@ -6,6 +6,15 @@ log()
 	logger -s "Thunder FastNiao" "$1"
 }
 
+json_read()
+{
+	#1, json; 2, key to read
+	json="$1"
+	key=."$2"
+	value=`echo "$json" | jq -r "$key"`
+	echo -n "$value"
+}
+
 generate_pwd_rsa_hex()
 {
 	$(log "Generating PWD RSA HEX")
@@ -22,18 +31,17 @@ get_self_netinfo()
 {
 	$(log "Fetching Server Info")
 	info_json=`curl http://api.portal.swjsq.vip.xunlei.com:81/v2/queryportal 2>/dev/null`
-	errno=`echo "$info_json" | jq -r ".errno"`
+	errno=$(json_read "$info_json" "errno")
 	if [ "$errno" -ne 0 ]
 	then #mean's something not right
-		exit 1
+		$(err_exit)
 	fi
-	interface_ip=`echo "$info_json" | jq -r ".interface_ip"`
-	interface_port=`echo "$info_json" | jq -r ".interface_port"`
+	interface_ip=$(json_read "$info_json" "interface_ip")
+	interface_port=$(json_read "$info_json" "interface_port")
 }
 
 get_wrap_wan_macaddr()
 {
-	$(log "Wraping Local MACADDR")
 	wan_iface=`uci -P /var/state get network.wan.device`
 	wan_mac="$(ifconfig "$wan_iface" | awk '/HWaddr/ { print $5 }')"
 	wrap_wan_mac=`echo -n "$wan_mac" | tr -d ':'`004V
@@ -116,6 +124,13 @@ sigterm()
 
 }
 
+err_exit()
+{
+	 $(log "ERROR QUIT")
+	 rm /var/state/fastdick
+	 exit
+}
+
 
 
 # script __main__
@@ -123,7 +138,18 @@ sigterm()
 # fetch basic info
 name=`uci get fastdick.setting.name 2>/dev/null`
 passwd=`uci get fastdick.setting.passwd 2>/dev/null`
-passwd_md5=`uci get fastdick.setting.passwd_md5 2>/dev/null`
+
+if [ `echo -n "$name" | wc -c` -eq 0 ]
+	then
+	uci set fastdick.setting.enabled=0
+	uci commit fastdick
+	$(err_exit)
+fi
+
+
+# calculate passwd_md5
+$(log "Generating passwd md5") 
+passwd_md5=`echo -n "$passwd" | md5sum | tr -d " -"`
 interface_ip=''
 interface_port=''
 TYPE_NORMAL_ACCOUNT=0
@@ -139,15 +165,8 @@ touch /var/state/fastdick
 uci -P /var/state set fastdick.pid=$$
 uci -P /var/state commit fastdick
 
-# calculate passwd_md5
 
-if [ `echo -n "$passwd_md5" | wc -c` -eq 0 ]
-	then
-	$(log "Generating passwd md5") 
-	passwd_md5=`echo -n "$passwd" | md5sum | tr -d " -"`
-	uci set fastdick.setting.passwd_md5="$passwd_md5" 2>/dev/null
-	uci commit fastdick 2>/dev/null
-fi
+
 
 
 
@@ -156,40 +175,39 @@ trap 'sigterm' INT
 
 
 login_result=$(thunder_login)
-sessionID=`echo "$login_result" | jq -r ".sessionID"`
+sessionID=$(json_read "$login_result" "sessionID")
 if [ `echo -n "$sessionID" | wc -c` -ne 32 ]
 then
 	$(log "Login Failed")
-	exit
+	$(err_exit)
 fi
 $(log "Login Success") 
 
-isVIP=`echo "$login_result" | jq -r ".isVip"`
+isVIP=$(json_read "$login_result" "isVip")
 if [ "$isVIP" -ne 1 ]
 then
 	$(log "Sorry you are not a VIP, Aborting") 
-	exit
+	$(err_exit)
 fi
 $(log "You are a VIP, preparing speedup")
 
-userID=`echo "$login_result" | jq -r ".userID"`
-interface_ip=`echo "$login_result" | jq -r ".userID"`
+userID=$(json_read "$login_result" "userID")
 get_self_netinfo
 speedup_check=$(speed_up_api "bandwidth" "$userID" "$sessionID")
 
-can_upgrade=`echo "$speedup_check" | jq -r ".can_upgrade"`
+can_upgrade=$(json_read "$speedup_check" "can_upgrade")
 
 if [ "$can_upgrade" -ne 1 ]
 then
 	$(log "Sorry Your network doesn't support speedup, Aborting") 
-	exit
+	$(err_exit)
 fi
 
 # now let's speedup
 
 loop=0
 speedup_result=$(speed_up_api "upgrade" "$userID" "$sessionID")
-status=`echo "$speedup_result" | jq -r ".errno"`
+status=$(json_read "$speedup_result" "errno")
 if [ "$status" -eq 0 ]
 	then
 		$(log "Speedup success") 
@@ -197,19 +215,51 @@ if [ "$status" -eq 0 ]
 	else
 		$(log errno:"$status") 
 		is_speedup=0
-		error_desc=`echo "$speedup_result" | jq -r ".message"`
+		error_desc=$(json_read "$speedup_result" "message")
 		$(log err-desc:"$error_desc") 
 		echo "$speedup_result" > /tmp/thunder_error_$$
 	fi
 while true; do
-	sleep 295
+	# first sleep 295s, doing below will resopnse faster after been killed
+	# if sleep 295, when sending kill pid the script will hang until sleep 295 finished
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 10
+	sleep 5
+	#end of sleep 295s
 	if [ "$loop" -eq 5 ]
 	then
 		loop=0
 		speedup_result=$(speed_up_api "recover" "$userID" "$sessionID")
 		sleep 5
 		speedup_result=$(speed_up_api "upgrade" "$userID" "$sessionID")
-        status=`echo "$speedup_result" | jq -r ".errno"`
+        status=$(json_read "$speedup_result" "errno")
         if [ "$status" -eq 0 ]
 	    then
             $(log "Re-speedup success") 
@@ -222,7 +272,7 @@ while true; do
 	else
 		loop=$(($loop+1))
 		speedup_result=$(speed_up_api "keepalive" "$userID" "$sessionID")
-        status=`echo "$speedup_result" | jq -r ".errno"`
+        status=$(json_read "$speedup_result" "errno")
         if [ "$status" -eq 0 ]
         then
         	    $(log Keepalive-"$loop"-success)

@@ -1,0 +1,49 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+STOP=99
+
+start()
+{
+	enabled=`uci get fastdick.setting.enabled`
+	if [ "$enabled" -ne 1 ]
+		then
+		rm -rf /var/state/fastdick
+		exit
+	fi
+	/usr/bin/fastdick 2>>/tmp/thunder_fastdick_log &
+}
+
+stop()
+{
+	pid=`uci -P /var/state get fastdick.pid 2>/dev/null`
+	if [ `echo -n "$pid" | wc -c` -ne 0 ]
+		then
+		if [ "$pid" -gt 0 ]
+		then
+			kill "$pid"
+			sleep 15
+		fi
+	fi
+
+}
+
+restart()
+{
+	stop
+	start
+}
+
+enable()
+{
+	uci set fastdick.setting.enabled=1
+	uci commit fastdick
+	restart
+}
+
+disable()
+{
+	uci set fastdick.setting.enabled=0
+	uci commit fastdick
+	stop
+}

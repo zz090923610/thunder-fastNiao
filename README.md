@@ -5,7 +5,7 @@
 适用条件：
 
 1，迅雷快鸟的付费会员（没付费的就别想了，这只是个客户端不负责帮你们黑出付费会员的加速权限）。
-2，有一个 OpenWrt 路由器，上面得装上 openssl-util，curl(带ssl)，jq(怎么编译看这里)，这是三个必要的依赖。
+2，有一个 OpenWrt 路由器，上面得装上 openssl-util，curl(带ssl)，jq(怎么编译看这里https://github.com/zz090923610/jq-openwrt)，这是三个必要的依赖。
 
 使用方法：
 1，获得适用于自己路由器的OpenWrt BUildroot或是SDK。
@@ -27,7 +27,7 @@
    uci set fastdick.setting.name='你的用户名'
    uci set fastdick.setting.passwd='你的密码'
    uci commit fastdick
-9，启用服务：
+9，启用服务(启用但不开启)：
   
    /etc/init.d/fastdick enable
 
@@ -35,11 +35,11 @@
 
    /etc/init.d/fastdick start
   
-10，停用加速:
+10，停止加速:
   
     /etc/init.d/fastdick stop
 
-11，停止服务：
+11，禁用服务：
   
    /etc/init.d/fastdick disable
   
@@ -56,7 +56,7 @@
 或是：
 
     cat /var/state/fastdick
-14，手动杀死脚本进程
+14，手动杀死脚本进程:
 
     kill 你ps时找到的pid
 

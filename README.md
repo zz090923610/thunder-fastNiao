@@ -41,7 +41,8 @@
     
 9，启用服务(启用但不开启)：
   
-    /etc/init.d/fastdick enable
+    uci set fastdick.setting.enabled=1
+    uci commit fastdick
 
 10，开启加速：
 
@@ -53,25 +54,23 @@
 
 11，禁用服务：
   
-    /etc/init.d/fastdick disable
+    uci set fastdick.setting.enabled=0
+    uci commit fastdick
   
 12，查看日志：
-
-    logread | grep thunder
-或是:
  
-    cat /tmp/thunder_fastdick_log
+    cat /tmp/thunder_fastdick/thunder_fastdick_log 
   
 13，获取脚本运行时的pid：
 
-    ps | grep thunder
+    ps | grep fastdick
 或是：
 
     cat /var/state/fastdick
 14，手动杀死脚本进程:
 
     kill 你ps时找到的pid
-
+    kill 一个可能存在的 sleep 进程的pid
 
 
 

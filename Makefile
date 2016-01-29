@@ -18,7 +18,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/thunder-fastdick
    SECTION:=thunder
    CATEGORY:=thunder
-   DEPENDS:=
+   DEPENDS:=+jq +openssl-util +curl
    TITLE:=Xunlei Kuainiao OpenWrt Client
    MAINTAINER:=
    PKGARCH:=all

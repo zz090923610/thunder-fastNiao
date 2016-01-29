@@ -2,11 +2,10 @@
 
 
 
-
 generate_pwd_rsa_hex()
 {
 	#first, encoding passwd using rsa
-	a=`echo -n "$passwd_md5" | openssl rsautl -raw -pubin -inkey pub.key  -hexdump | tr -d " " | tr [a-z] [A-Z]`
+	a=`echo -n "$passwd_md5" | openssl rsautl -raw -pubin -inkey /etc/thunder.key  -hexdump | tr -d " " | tr [a-z] [A-Z]`
 	for pos in 5 60 115 170 225 280 335 390
 	do
 		pwd_rsa_hex="$pwd_rsa_hex"${a:$pos:16}${a:$(($pos+17)):16}
@@ -68,7 +67,7 @@ echo -n "$body"
 
 thunder_login()
 {
-	echo $(generate_req_body) > /tmp/req_body
+	echo $(generate_req_body) > /tmp/thunder_req_body
 	
 	url_login="https://login.mobile.reg2t.sandai.net:443"
 	login_header='-H "Content-Type:" \
@@ -76,7 +75,7 @@ thunder_login()
 				  -H "Accept-Encoding:gzip" \
 				  -H "User-Agent:android-async-http/1.4.3 (http://loopj.com/android-async-http)"'
 login_result=`curl --insecure "$login_header" \
---data @/tmp/req_body "$url_login" 2>/dev/null`
+--data @/tmp/thunder_req_body "$url_login" 2>/dev/null`
 echo -n "$login_result"
 }
 
@@ -101,7 +100,8 @@ sigterm()
         then
                 exit
         else
-                $(speed_up_api "recover" "$userID" "$sessionID")
+                a=$(speed_up_api "recover" "$userID" "$sessionID")
+                echo "Stop speedup"
                 exit
         fi
 }

@@ -1,20 +1,26 @@
 #!/bin/ash
 
 
+log()
+{
+	logger -s "Thunder FastNiao" "$1"
+}
 
 generate_pwd_rsa_hex()
 {
+	$(log "Generating PWD RSA HEX")
 	#first, encoding passwd using rsa
 	a=`echo -n "$passwd_md5" | openssl rsautl -raw -pubin -inkey /etc/thunder.key  -hexdump | tr -d " " | tr [a-z] [A-Z]`
 	for pos in 5 60 115 170 225 280 335 390
 	do
 		pwd_rsa_hex="$pwd_rsa_hex"${a:$pos:16}${a:$(($pos+17)):16}
 	done
-	echo "$pwd_rsa_hex"
+	echo -n "$pwd_rsa_hex"
 }
 
 get_self_netinfo()
 {
+	$(log "Fetching Server Info")
 	info_json=`curl http://api.portal.swjsq.vip.xunlei.com:81/v2/queryportal 2>/dev/null`
 	errno=`echo "$info_json" | jq -r ".errno"`
 	if [ "$errno" -ne 0 ]
@@ -27,6 +33,7 @@ get_self_netinfo()
 
 get_wrap_wan_macaddr()
 {
+	$(log "Wraping Local MACADDR")
 	wan_iface=`uci -P /var/state get network.wan.device`
 	wan_mac="$(ifconfig "$wan_iface" | awk '/HWaddr/ { print $5 }')"
 	wrap_wan_mac=`echo -n "$wan_mac" | tr -d ':'`004V
@@ -35,8 +42,8 @@ get_wrap_wan_macaddr()
 
 generate_req_body()
 {
-        pwd_rsa_hex=$(generate_pwd_rsa_hex)
-        wrap_wan_macaddr=$(get_wrap_wan_macaddr)
+    pwd_rsa_hex=$(generate_pwd_rsa_hex)
+    wrap_wan_macaddr=$(get_wrap_wan_macaddr)
 	body="{\
 \"protocolVersion\": 101,\
 \"sequenceNo\": 1000001,\
@@ -74,13 +81,15 @@ thunder_login()
 				  -H "Connection:Keep-Alive" \
 				  -H "Accept-Encoding:gzip" \
 				  -H "User-Agent:android-async-http/1.4.3 (http://loopj.com/android-async-http)"'
-login_result=`curl --insecure "$login_header" \
+	$(log "Trying login")
+	login_result=`curl --insecure "$login_header" \
 --data @/tmp/thunder_req_body "$url_login" 2>/dev/null`
-echo -n "$login_result"
+	echo -n "$login_result"
 }
 
 speed_up_api()# 1,command;2,userID;3,sessionID
 {
+	$(log Performing-"$1"-action)
 	wrap_mac=$(get_wrap_wan_macaddr)
 	api_url=http://"$interface_ip":"$interface_port"/v2/"$1"?peerid="$wrap_mac"\&userid="$2"\&user_type=1\&sessionid="$sessionID"
 
@@ -94,16 +103,17 @@ speed_up_api()# 1,command;2,userID;3,sessionID
 
 sigterm()           
 {
-        echo "Quit"
+    $(log "Quit")
 	rm /var/state/fastdick
-        if [ "$is_speedup" -eq 0 ]
-        then
-                exit
-        else
-                a=$(speed_up_api "recover" "$userID" "$sessionID")
-                echo "Stop speedup"
-                exit
-        fi
+    if [ "$is_speedup" -eq 0 ]
+    then
+        exit
+    else
+        a=$(speed_up_api "recover" "$userID" "$sessionID")
+        $(log "Stop speedup") 
+        exit
+    fi
+
 }
 
 
@@ -133,7 +143,7 @@ uci -P /var/state commit fastdick
 
 if [ `echo -n "$passwd_md5" | wc -c` -eq 0 ]
 	then
-	echo "need to update md5"
+	$(log "Generating passwd md5") 
 	passwd_md5=`echo -n "$passwd" | md5sum | tr -d " -"`
 	uci set fastdick.setting.passwd_md5="$passwd_md5" 2>/dev/null
 	uci commit fastdick 2>/dev/null
@@ -149,18 +159,18 @@ login_result=$(thunder_login)
 sessionID=`echo "$login_result" | jq -r ".sessionID"`
 if [ `echo -n "$sessionID" | wc -c` -ne 32 ]
 then
-	echo "Login Failed"
+	$(log "Login Failed")
 	exit
 fi
-echo "Login Success"
+$(log "Login Success") 
 
 isVIP=`echo "$login_result" | jq -r ".isVip"`
 if [ "$isVIP" -ne 1 ]
 then
-	ehco "Sorry you are not a VIP"
+	$(log "Sorry you are not a VIP, Aborting") 
 	exit
 fi
-echo "Welcome VIP"
+$(log "You are a VIP, preparing speedup")
 
 userID=`echo "$login_result" | jq -r ".userID"`
 interface_ip=`echo "$login_result" | jq -r ".userID"`
@@ -171,7 +181,7 @@ can_upgrade=`echo "$speedup_check" | jq -r ".can_upgrade"`
 
 if [ "$can_upgrade" -ne 1 ]
 then
-	echo "Your network doesn't support speedup"
+	$(log "Sorry Your network doesn't support speedup, Aborting") 
 	exit
 fi
 
@@ -182,15 +192,15 @@ speedup_result=$(speed_up_api "upgrade" "$userID" "$sessionID")
 status=`echo "$speedup_result" | jq -r ".errno"`
 if [ "$status" -eq 0 ]
 	then
-		echo speedup success
+		$(log "Speedup success") 
 		is_speedup=1
 	else
-		echo errno "$status"
+		$(log errno:"$status") 
 		is_speedup=0
+		error_desc=`echo "$speedup_result" | jq -r ".message"`
+		$(log err-desc:"$error_desc") 
+		echo "$speedup_result" > /tmp/thunder_error_$$
 	fi
-	uci -P /var/state set fastdick.errno="$status"
-	uci -P /var/state set fastdick.message=`echo -n "$speedup_result" | jq -r ".message"`
-	uci -P /var/state commit fastdick
 while true; do
 	sleep 295
 	if [ "$loop" -eq 5 ]
@@ -202,15 +212,12 @@ while true; do
         status=`echo "$speedup_result" | jq -r ".errno"`
         if [ "$status" -eq 0 ]
 	    then
-            echo re-speedup success
+            $(log "Re-speedup success") 
 	    is_speedup=1
         else
-               echo errno "$status"
+               $(log errno:"$status") 
 		is_speedup=0
         fi
-        uci -P /var/state set fastdick.errno="$status"
-		uci -P /var/state set fastdick.message=`echo -n "$speedup_result" | jq -r ".message"`
-		uci -P /var/state commit fastdick
 
 	else
 		loop=$(($loop+1))
@@ -218,14 +225,11 @@ while true; do
         status=`echo "$speedup_result" | jq -r ".errno"`
         if [ "$status" -eq 0 ]
         then
-        	    echo keepalive "$loop"
+        	    $(log Keepalive-"$loop"-success)
 			is_speedup=1
         else
-        	    echo errno "$status"
+        	    $(log errno:"$status") 
 			is_speedup=0
 	    fi
-		uci -P /var/state set fastdick.errno="$status"
-		uci -P /var/state set fastdick.message=`echo -n "$speedup_result" | jq -r ".message"`
-		uci -P /var/state commit fastdick
 	fi
 done

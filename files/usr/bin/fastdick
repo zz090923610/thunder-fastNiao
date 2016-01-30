@@ -105,7 +105,7 @@ speed_up_api()# 1,command;2,userID;3,sessionID
 
 sigterm()           
 {
-    $(log "Quit")	
+    
 
     if [ "$is_speedup" -eq 0 ]
     then
@@ -115,7 +115,7 @@ sigterm()
         $(log "Stop speedup") 
         exit
     fi
-
+	$(log "Quit")	
 }
 
 
@@ -130,11 +130,13 @@ passwd=`uci get fastdick.setting.passwd 2>/dev/null`
 enabled=`uci get fastdick.setting.enabled 2>/dev/null`
 if [ "$enabled" -ne 1 ]
 	then
+	$(log "Thunder FastNiao not enabled, exit.")
 	exit
 fi
 
 if [ `echo -n "$name" | wc -c` -eq 0 -o `echo -n "$passwd" | wc -c` -eq 0 ]
 	then
+	$(log "Username and Password should not be empty, exit.")
 	exit
 fi
 
@@ -159,10 +161,20 @@ uci -P /var/state commit fastdick
 
 
 login_result=$(thunder_login)
+errno=$(json_read "$login_result" "errorCode")
+
+if [ "$errno" -ne 0 ]
+	then
+	$(log "Login Failed, dump response json and exit")
+	$(log "$login_result")
+	exit
+fi
+
 sessionID=$(json_read "$login_result" "sessionID")
 if [ `echo -n "$sessionID" | wc -c` -ne 32 ]
 then
-	$(log "Login Failed")
+	$(log "Login Failed, sessionID should be 32 chars, dump response json and exit")
+	$(log "$login_result")
 	exit
 fi
 $(log "Login Success") 
@@ -170,21 +182,25 @@ $(log "Login Success")
 isVIP=$(json_read "$login_result" "isVip")
 if [ "$isVIP" -ne 1 ]
 then
-	$(log "Sorry you are not a VIP, Aborting") 
+	$(log "Sorry you are not a VIP, exit") 
 	exit
 fi
-$(log "You are a VIP, preparing speedup")
+$(log "You are a VIP, now preparing speedup")
 
 userID=$(json_read "$login_result" "userID")
-	$(log "Fetching Server Info")
-	info_json=`curl http://api.portal.swjsq.vip.xunlei.com:81/v2/queryportal 2>/dev/null`
-	errno=$(json_read "$info_json" "errno")
-	if [ "$errno" -ne 0 ]
-	then #mean's something not right
-		exit
-	fi
-	interface_ip=$(json_read "$info_json" "interface_ip")
-	interface_port=$(json_read "$info_json" "interface_port")
+$(log "Fetching Server Info")
+info_json=`curl http://api.portal.swjsq.vip.xunlei.com:81/v2/queryportal 2>/dev/null`
+errno=$(json_read "$info_json" "errno")
+if [ "$errno" -ne 0 ]
+then #mean's something not right
+	$(log "Fetching Server info failed, dump response json and exit") 
+	$(log "$info_json") 
+	exit
+fi
+interface_ip=$(json_read "$info_json" "interface_ip")
+interface_port=$(json_read "$info_json" "interface_port")
+#should we check server info here?
+
 speedup_check=$(speed_up_api "bandwidth" "$userID" "$sessionID")
 
 can_upgrade=$(json_read "$speedup_check" "can_upgrade")
@@ -205,10 +221,10 @@ if [ "$status" -eq 0 ]
 		$(log "Speedup success") 
 		is_speedup=1
 	else
-		$(log errno:"$status") 
+		$(log "Speedup failed, dump response json and exit") 
 		is_speedup=0
-		error_desc=$(json_read "$speedup_result" "message")
-		$(log err-desc:"$error_desc") 
+		$(log "$speedup_result") 
+		exit
 	fi
 while true; do
 	sleep 295
@@ -225,8 +241,10 @@ while true; do
             $(log "Re-speedup success") 
 	    is_speedup=1
         else
-               $(log errno:"$status") 
-		is_speedup=0
+            $(log "Re-speedup failed, dump response json, retry after 5 mins") 
+            $(log "$speedup_result") 
+			is_speedup=0
+			loop=5
         fi
 
 	else
@@ -238,7 +256,8 @@ while true; do
         	    $(log Keepalive-"$loop"-success)
 			is_speedup=1
         else
-        	    $(log errno:"$status") 
+        	$(log "Keepalive failed, dump response json, retry after 5 mins") 
+            $(log "$speedup_result") 
 			is_speedup=0
 	    fi
 	fi

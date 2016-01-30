@@ -8,9 +8,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=thunder-fastdick
-PKG_VERSION:=2.0
-PKG_RELEASE:=2
-PKG_MAINTAINER:=Jeroen Louwes <jeroen.louwes@gmail.com>
+PKG_VERSION:=0.5
+PKG_RELEASE:=0
+PKG_MAINTAINER:=Zhao Zhang <zhao.zhang.glacier@gmail.com>
 PKG_LICENSE:=GPLv2
 
 include $(INCLUDE_DIR)/package.mk
@@ -18,16 +18,14 @@ include $(INCLUDE_DIR)/package.mk
 define Package/thunder-fastdick
    SECTION:=thunder
    CATEGORY:=thunder
-   DEPENDS:=+jq +openssl-util +curl
+   DEPENDS:=++openssl-util +curl
    TITLE:=Xunlei Kuainiao OpenWrt Client
    MAINTAINER:=
    PKGARCH:=all
 endef
 
 define Package/thunder-fastdick/description
-Hotplug script which makes configuration of multiple WAN interfaces simple
-and manageable. With loadbalancing/failover support for up to 250 wan
-interfaces, connection tracking and an easy to manage traffic ruleset.
+	Speed up all day long
 endef
 
 define Package/thunder-fastdick/conffiles
@@ -38,12 +36,9 @@ define Build/Compile
 endef
 
 define Package/thunder-fastdick/install
-#$(CP) ./files/* $(1)
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DIR) $(1)/etc/init.d
-
-	
 	$(INSTALL_BIN) ./files/usr/bin/fastdick $(1)/usr/bin/
 	$(INSTALL_BIN) ./files/etc/init.d/fastdick $(1)/etc/init.d/
 	$(INSTALL_CONF) ./files/etc/config/fastdick $(1)/etc/config/

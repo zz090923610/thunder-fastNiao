@@ -1,6 +1,6 @@
 #!/bin/ash
 mkdir -p /tmp/thunder_fastdick/
-exec 2>/tmp/thunder_fastdick/thunder_fastdick_log
+#exec 2>/tmp/thunder_fastdick/thunder_fastdick_log
 flush_log()
 {
 	if [ `cat /tmp/thunder_fastdick/thunder_fastdick_log | wc -l` -gt 100 ]
@@ -21,8 +21,10 @@ json_read()
 	#1, json; 2, key to read
 	json="$1"
 	key=."$2"
-	value=`echo "$json" | jq -r "$key"`
+	_tmp="$(jsonfilter -s "$json" -e value=@"$key" 2>/dev/null)"
+	eval "$_tmp"
 	echo -n "$value"
+
 }
 
 generate_pwd_rsa_hex()
@@ -37,18 +39,6 @@ generate_pwd_rsa_hex()
 	echo -n "$pwd_rsa_hex"
 }
 
-get_self_netinfo()
-{
-	$(log "Fetching Server Info")
-	info_json=`curl http://api.portal.swjsq.vip.xunlei.com:81/v2/queryportal 2>/dev/null`
-	errno=$(json_read "$info_json" "errno")
-	if [ "$errno" -ne 0 ]
-	then #mean's something not right
-		$(err_exit)
-	fi
-	interface_ip=$(json_read "$info_json" "interface_ip")
-	interface_port=$(json_read "$info_json" "interface_port")
-}
 
 get_wrap_wan_macaddr()
 {
@@ -135,13 +125,6 @@ sigterm()
 
 }
 
-err_exit()
-{
-	 $(log "ERROR QUIT")
-	 rm /var/state/fastdick
-	 exit
-}
-
 
 
 # script __main__
@@ -160,7 +143,7 @@ fi
 
 if [ `echo -n "$name" | wc -c` -eq 0 -o `echo -n "$passwd" | wc -c` -eq 0 ]
 	then
-	$(err_exit)
+	exit
 fi
 
 
@@ -188,7 +171,7 @@ sessionID=$(json_read "$login_result" "sessionID")
 if [ `echo -n "$sessionID" | wc -c` -ne 32 ]
 then
 	$(log "Login Failed")
-	$(err_exit)
+	exit
 fi
 $(log "Login Success") 
 
@@ -196,12 +179,20 @@ isVIP=$(json_read "$login_result" "isVip")
 if [ "$isVIP" -ne 1 ]
 then
 	$(log "Sorry you are not a VIP, Aborting") 
-	$(err_exit)
+	exit
 fi
 $(log "You are a VIP, preparing speedup")
 
 userID=$(json_read "$login_result" "userID")
-get_self_netinfo
+	$(log "Fetching Server Info")
+	info_json=`curl http://api.portal.swjsq.vip.xunlei.com:81/v2/queryportal 2>/dev/null`
+	errno=$(json_read "$info_json" "errno")
+	if [ "$errno" -ne 0 ]
+	then #mean's something not right
+		exit
+	fi
+	interface_ip=$(json_read "$info_json" "interface_ip")
+	interface_port=$(json_read "$info_json" "interface_port")
 speedup_check=$(speed_up_api "bandwidth" "$userID" "$sessionID")
 
 can_upgrade=$(json_read "$speedup_check" "can_upgrade")
@@ -209,7 +200,7 @@ can_upgrade=$(json_read "$speedup_check" "can_upgrade")
 if [ "$can_upgrade" -ne 1 ]
 then
 	$(log "Sorry Your network doesn't support speedup, Aborting") 
-	$(err_exit)
+	exit
 fi
 
 # now let's speedup

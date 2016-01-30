@@ -7,7 +7,7 @@
 
 1，迅雷快鸟的付费会员（没付费的就别想了，这只是个客户端不负责帮你们黑出付费会员的加速权限）。
 
-2，有一个 OpenWrt 路由器，上面得装上 openssl-util，curl(带ssl)，jq(怎么编译看这里https://github.com/zz090923610/jq-openwrt )，这是三个必要的依赖。
+2，有一个 OpenWrt 路由器，上面得装上 openssl-util，curl(带ssl)，这是 2 个必要的依赖。
 
 使用方法：
 
@@ -31,7 +31,7 @@
 
 7，使用 ssh 连接到你的路由器，执行下面命令安装 ipk 包。
 
-    opkg install /tmp/your_thunder_pkg.ipk
+    opkg install /tmp/thunder-*.ipk
     
 8，使用 uci 设置用户名密码信息。
 

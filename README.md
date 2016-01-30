@@ -84,7 +84,7 @@ https://github.com/zz090923610/thunder-fastNiao/wiki/%E4%BD%BF%E7%94%A8%E6%96%B9
   
 6，查看日志：
  
-    cat /tmp/thunder_fastdick/thunder_fastdick_log 
+    logread | grep Thunder
   
 7，获取脚本运行时的pid：
 

@@ -9,9 +9,18 @@
 
 2，有一个 OpenWrt 路由器，上面得装上 openssl-util，curl(带ssl)，这是 2 个必要的依赖。
 
-First Dependency: openssl-util, curl
+直接依赖软件包: openssl-util, curl
 
-Secondary Dependency: libcurl, libpolarssl, libopenssl, zlib
+间接依赖软件包（被openssl-util和curl依赖）: libcurl, libpolarssl; libopenssl, zlib
+
+如何获取并安装这六个软件包：
+
+1，请根据OpenWrt的官方教程学习如何安装软件包https://wiki.openwrt.org/doc/packages#install_packagesusage_of_opkg
+
+2，这六个软件包首先可以自行编译。
+
+3，因为这六个软件包都已经加入官方的package feeds，所以如果不想编译，OpenWrt官方提供每个版本的预编译好的官方源包含的软件包可供下载。下载地址http://downloads.openwrt.org/ 你需要选择与自己路由器所装OpenWrt版本匹配的、与你路由器硬件方案匹配的预编译好的软件包下载。
+
 
 直接安装方法：
 
@@ -41,7 +50,12 @@ Secondary Dependency: libcurl, libpolarssl, libopenssl, zlib
 
     opkg install /tmp/thunder-*.ipk
     
-使用方法：
+使用方法（luci）：
+
+https://github.com/zz090923610/thunder-fastNiao/wiki/%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95%EF%BC%88luci%EF%BC%89%EF%BC%9A
+
+
+使用方法（命令行）：
 
 
 1，使用 uci 设置用户名密码信息。
@@ -88,6 +102,6 @@ TODO:
 
 优化 log
 
-Luci界面
+<del>Luci界面<del>
 
 

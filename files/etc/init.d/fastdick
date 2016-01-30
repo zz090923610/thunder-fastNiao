@@ -1,5 +1,8 @@
 #!/bin/sh /etc/rc.common
 
+# Writen by zz090923610
+# Not for any kind of commercial use.
+
 START=99
 STOP=10
 SERVICE_WRITE_PID=1
@@ -12,7 +15,6 @@ start()
 
 stop()
 {
-	rm -rf /var/state/fastdick
 	cd /proc
 	for pid in [0-9]*
 	do

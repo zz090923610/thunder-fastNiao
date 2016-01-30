@@ -9,6 +9,10 @@
 
 2，有一个 OpenWrt 路由器，上面得装上 openssl-util，curl(带ssl)，这是 2 个必要的依赖。
 
+First Dependency: openssl-util, curl
+
+Secondary Dependency: libcurl, libpolarssl, libopenssl, zlib
+
 直接安装方法：
 
 克隆本项目到本地，将 thunder-fastdick_0.5-0_all.ipk 上传路由器，使用opkg 安装。

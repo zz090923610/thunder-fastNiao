@@ -1,15 +1,7 @@
 #!/bin/ash
-mkdir -p /tmp/thunder_fastdick/
-#exec 2>/tmp/thunder_fastdick/thunder_fastdick_log
-flush_log()
-{
-	if [ `cat /tmp/thunder_fastdick/thunder_fastdick_log | wc -l` -gt 100 ]
-		then
-			echo '' > /tmp/thunder_fastdick/thunder_fastdick_log
-	fi
 
-}
-
+# Writen by zz090923610
+# Not for any kind of commercial use.
 
 log()
 {
@@ -82,7 +74,7 @@ echo -n "$body"
 
 thunder_login()
 {
-	echo $(generate_req_body) > /tmp/thunder_fastdick/thunder_req_body
+	echo $(generate_req_body) > /tmp/thunder_req_body
 	
 	url_login="https://login.mobile.reg2t.sandai.net:443"
 	login_header='-H "Content-Type:" \
@@ -91,7 +83,8 @@ thunder_login()
 				  -H "User-Agent:android-async-http/1.4.3 (http://loopj.com/android-async-http)"'
 	$(log "Trying login")
 	login_result=`curl --insecure "$login_header" \
---data @/tmp/thunder_fastdick/thunder_req_body "$url_login" 2>/dev/null`
+--data @/tmp/thunder_req_body "$url_login" 2>/dev/null`
+	rm -f /tmp/thunder_req_body 2>/dev/null
 	echo -n "$login_result"
 }
 
@@ -131,7 +124,6 @@ sigterm()
 trap 'sigterm' TERM
 trap 'sigterm' INT
 
-mkdir -p /tmp/thunder_fastdick
 # fetch basic info
 name=`uci get fastdick.setting.name 2>/dev/null`
 passwd=`uci get fastdick.setting.passwd 2>/dev/null`
@@ -217,7 +209,6 @@ if [ "$status" -eq 0 ]
 		is_speedup=0
 		error_desc=$(json_read "$speedup_result" "message")
 		$(log err-desc:"$error_desc") 
-		echo "$speedup_result" > /tmp/thunder_fastdick/thunder_error_$$
 	fi
 while true; do
 	sleep 295

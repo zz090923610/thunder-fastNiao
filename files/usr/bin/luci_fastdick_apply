@@ -1,0 +1,25 @@
+#!/bin/ash
+
+# Writen by zz090923610
+# Not for any kind of commercial use.
+
+enabled=`uci get fastdick.setting.enabled`
+
+if [ "$enabled" -ne 1 ]
+then
+	/etc/init.d/fastdick stop
+	/etc/init.d/fastdick disable
+	exit
+fi
+
+startup=`uci get fastdick.setting.startup`
+
+if [ "$startup" -eq 1 ]
+then
+	/etc/init.d/fastdick enable
+elif [ "$startup" -eq 0 ]
+then
+	/etc/init.d/fastdick disable
+fi
+
+/etc/init.d/fastdick restart

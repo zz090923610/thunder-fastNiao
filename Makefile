@@ -52,6 +52,35 @@ define Package/thunder-fastdick/install
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/i18n
 	$(INSTALL_CONF) ./files/usr/lib/lua/luci/i18n/thunder-fastniao.zh-cn.lmo $(1)/usr/lib/lua/luci/i18n/
 endef
+define Package/thunder-fastdick/preinst
+#!/bin/sh
+cd /proc
+	for pid in [0-9]*
+	do
+		if grep "Name:	fastdick" $pid/status &>/dev/null
+			then
+			if [ "$pid" -eq "$$" ]
+				then
+				continue
+			fi
+			echo "Stop service fastdick $pid"
+			kill "$pid"
+			for cpid in [0-9]*
+			do
+				if grep "PPid:	$pid" $cpid/status &>/dev/null
+				then
+				    echo "Stop child process $cpid"
+				    name=`cat $cpid/status | grep "Name:" | sed 's/Name://' | tr -d ' \n\t'`
+				    if [ "$name" = "sleep" ]
+				    then
+					    kill $cpid
+				    fi
+				fi
+			done	
+		fi
+	done
+endef
+
 define Package/thunder-fastdick/postinst
 #!/bin/sh
 rm -rf /luci-modulecache
@@ -59,6 +88,31 @@ rm -f luci-indexcache
 endef
 define Package/thunder-fastdick/postrm
 #!/bin/sh
+cd /proc
+	for pid in [0-9]*
+	do
+		if grep "Name:	fastdick" $pid/status &>/dev/null
+			then
+			if [ "$pid" -eq "$$" ]
+				then
+				continue
+			fi
+			echo "Stop service fastdick $pid"
+			kill "$pid"
+			for cpid in [0-9]*
+			do
+				if grep "PPid:	$pid" $cpid/status &>/dev/null
+				then
+				    echo "Stop child process $cpid"
+				    name=`cat $cpid/status | grep "Name:" | sed 's/Name://' | tr -d ' \n\t'`
+				    if [ "$name" = "sleep" ]
+				    then
+					    kill $cpid
+				    fi
+				fi
+			done	
+		fi
+	done
 rm -rf /luci-modulecache
 rm -f luci-indexcache
 endef

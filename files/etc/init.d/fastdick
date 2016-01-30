@@ -2,18 +2,25 @@
 
 # Writen by zz090923610
 # Not for any kind of commercial use.
-
+USE_PROCD=1
 START=99
 STOP=10
 SERVICE_WRITE_PID=1
 SERVICE_DAEMONIZE=1
 
-start()
+start_service() 
 {
-	service_start /usr/bin/fastdick
+  procd_open_instance
+  procd_set_param command /usr/bin/fastdick
+  # respawn automatically if something died, be careful if you have an alternative process supervisor
+  # if process dies sooner than respawn_threshold, it is considered crashed and after 5 retries the service is stopped
+  procd_set_param respawn ${respawn_threshold:-5} ${respawn_timeout:-300} ${respawn_retry:-24}
+  procd_set_param stdout 1 # forward stdout of the command to logd
+  procd_set_param stderr 1 # same for stderr
+  procd_close_instance
 }
 
-stop()
+stop_service()
 {
 	cd /proc
 	for pid in [0-9]*
@@ -25,7 +32,7 @@ stop()
 				continue
 			fi
 			echo "Stop service fastdick $pid"
-			kill "$pid"
+			#kill "$pid"
 			for cpid in [0-9]*
 			do
 				if grep "PPid:	$pid" $cpid/status &>/dev/null
@@ -40,11 +47,4 @@ stop()
 			done	
 		fi
 	done	
-}
-
-restart()
-{
-	stop
-	sleep 5
-	start
 }

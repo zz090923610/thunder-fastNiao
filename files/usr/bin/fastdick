@@ -241,10 +241,9 @@ while true; do
             $(log "Re-speedup success") 
 	    is_speedup=1
         else
-            $(log "Re-speedup failed, dump response json, retry after 5 mins") 
+            $(log "Re-speedup failed, dump response json, dump response json and exit") 
             $(log "$speedup_result") 
-			is_speedup=0
-			loop=5
+			exit
         fi
 
 	else
@@ -256,9 +255,9 @@ while true; do
         	    $(log Keepalive-"$loop"-success)
 			is_speedup=1
         else
-        	$(log "Keepalive failed, dump response json, retry after 5 mins") 
+        	$(log "Keepalive failed, dump response json, dump response json and exit") 
             $(log "$speedup_result") 
-			is_speedup=0
+			exit
 	    fi
 	fi
 done

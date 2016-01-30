@@ -3,4 +3,5 @@ config entry 'setting'
 	option name ''
 	option passwd ''
 	option enabled '0'
+	option restart 0
 

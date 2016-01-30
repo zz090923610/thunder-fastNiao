@@ -73,6 +73,12 @@
     kill 一个可能存在的 sleep 进程的pid
 
 
+TODO:
 
+增加返回值错误处理。
+
+优化 log
+
+Luci界面
 
 

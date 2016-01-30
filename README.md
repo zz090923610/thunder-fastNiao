@@ -9,7 +9,11 @@
 
 2，有一个 OpenWrt 路由器，上面得装上 openssl-util，curl(带ssl)，这是 2 个必要的依赖。
 
-使用方法：
+直接安装方法：
+
+克隆本项目到本地，将 thunder-fastdick_0.5-0_all.ipk 上传路由器，使用opkg 安装。
+
+编译安装方法：
 
 1，获得适用于自己路由器的OpenWrt BUildroot或是SDK。
 
@@ -33,41 +37,42 @@
 
     opkg install /tmp/thunder-*.ipk
     
-8，使用 uci 设置用户名密码信息。
+使用方法：
+
+
+1，使用 uci 设置用户名密码信息。
 
     uci set fastdick.setting.name='你的用户名'
     uci set fastdick.setting.passwd='你的密码'
     uci commit fastdick
     
-9，启用服务(启用但不开启)：
+2，启用服务(启用但不开启)：
   
     uci set fastdick.setting.enabled=1
     uci commit fastdick
 
-10，开启加速：
+3，开启加速：
 
     /etc/init.d/fastdick start
   
-10，停止加速:
+4，停止加速:
   
     /etc/init.d/fastdick stop
 
-11，禁用服务：
+5，禁用服务：
   
     uci set fastdick.setting.enabled=0
     uci commit fastdick
   
-12，查看日志：
+6，查看日志：
  
     cat /tmp/thunder_fastdick/thunder_fastdick_log 
   
-13，获取脚本运行时的pid：
+7，获取脚本运行时的pid：
 
     ps | grep fastdick
-或是：
 
-    cat /var/state/fastdick
-14，手动杀死脚本进程:
+8，手动杀死脚本进程:
 
     kill 你ps时找到的pid
     kill 一个可能存在的 sleep 进程的pid

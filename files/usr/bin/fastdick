@@ -34,8 +34,19 @@ generate_pwd_rsa_hex()
 
 get_wrap_wan_macaddr()
 {
+	# check wan
+
+
 	wan_iface=`uci -P /var/state get network.wan.device`
 	wan_mac="$(ifconfig "$wan_iface" | awk '/HWaddr/ { print $5 }')"
+	if [ `echo -n "$wan_mac" | tr -d ':' | wc -c` -ne 12  ]
+		then
+		wan_mac="00:11:22:33:44:55"
+	fi
+	
+
+
+
 	if [ `echo -n "$wan_mac" | tr -d ':' | wc -c` -ne 12  ]
 		then
 		wan_mac="00:11:22:33:44:55"
@@ -185,12 +196,12 @@ if [ "$errno" -ne 0 ]
 fi
 
 sessionID=$(json_read "$login_result" "sessionID")
-if [ `echo -n "$sessionID" | wc -c` -ne 32 ]
-then
-	$(log "Login Failed, sessionID should be 32 chars, dump response json and exit")
-	$(log "$login_result")
-	exit 1
-fi
+#if [ `echo -n "$sessionID" | wc -c` -ne 32 ]
+#then
+#	$(log "Login Failed, sessionID should be 32 chars, dump response json and exit")
+#	$(log "$login_result")
+#	exit 1
+#fi
 
 $(log "Login Success") 
 

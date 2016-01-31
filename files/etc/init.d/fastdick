@@ -15,8 +15,8 @@ start_service()
   # respawn automatically if something died, be careful if you have an alternative process supervisor
   # if process dies sooner than respawn_threshold, it is considered crashed and after 5 retries the service is stopped
   procd_set_param respawn ${respawn_threshold:-5} ${respawn_timeout:-300} ${respawn_retry:-24}
-  procd_set_param stdout 1 # forward stdout of the command to logd
-  procd_set_param stderr 1 # same for stderr
+#  procd_set_param stdout 1 # forward stdout of the command to logd
+#  procd_set_param stderr 1 # same for stderr
   procd_close_instance
 }
 

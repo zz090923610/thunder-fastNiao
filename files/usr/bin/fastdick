@@ -36,12 +36,18 @@ get_wrap_wan_macaddr()
 {
 	wan_iface=`uci -P /var/state get network.wan.device`
 	wan_mac="$(ifconfig "$wan_iface" | awk '/HWaddr/ { print $5 }')"
+	if [ `echo -n "$wan_mac" | tr -d ':' | wc -c` -ne 12  ]
+		then
+		wan_mac="00:11:22:33:44:55"
+	fi
 	wrap_wan_mac=`echo -n "$wan_mac" | tr -d ':'`004V
 	echo -n "$wrap_wan_mac"
 }
 
-generate_req_body()
+
+thunder_login()
 {
+# generate req body
     pwd_rsa_hex=$(generate_pwd_rsa_hex)
     wrap_wan_macaddr=$(get_wrap_wan_macaddr)
 	body="{\
@@ -67,15 +73,8 @@ generate_req_body()
 \"extensionList\": \"\"\
 }"
 
-echo -n "$body"
-}
-
-
-
-thunder_login()
-{
-	echo $(generate_req_body) > /tmp/thunder_req_body
-	
+echo -n "$body" > /tmp/thunder_req_body
+# end of generate req body
 	url_login="https://login.mobile.reg2t.sandai.net:443"
 	login_header='-H "Content-Type:" \
 				  -H "Connection:Keep-Alive" \
@@ -109,16 +108,25 @@ sigterm()
 
     if [ "$is_speedup" -eq 0 ]
     then
-        exit
+        exit 0
     else
         a=$(speed_up_api "recover" "$userID" "$sessionID")
         $(log "Stop speedup") 
-        exit
+        exit 0
     fi
 	$(log "Quit")	
 }
 
-
+test_md5()
+{
+	val_of_test=`echo -n "test" | md5sum | tr -d " -"`
+	if [ "$val_of_test" = "098f6bcd4621d373cade4e832627b4f6" ]
+		then
+		echo -n "right"
+	else
+		echo -n "wrong"
+	fi
+}
 
 # script __main__
 trap 'sigterm' TERM
@@ -131,21 +139,31 @@ enabled=`uci get fastdick.setting.enabled 2>/dev/null`
 if [ "$enabled" -ne 1 ]
 	then
 	$(log "Thunder FastNiao not enabled, exit.")
-	exit
+	exit 1
 fi
 
 if [ `echo -n "$name" | wc -c` -eq 0 -o `echo -n "$passwd" | wc -c` -eq 0 ]
 	then
 	$(log "Username and Password should not be empty, exit.")
-	exit
+	exit 1
 fi
 
 
 # calculate passwd_md5
 $(log "Generating passwd md5") 
+if [ `test_md5` = 'wrong' ]
+	then
+	$(log "md5sum doesn't work, exit.")
+	exit 1
+fi
 passwd_md5=`echo -n "$passwd" | md5sum | tr -d " -"`
-interface_ip=''
-interface_port=''
+
+if [ `echo -n "$passwd_md5" | wc -c` -ne 32 ]
+	then
+	$(log "md5sum should be 32 chars, exit.")
+	exit 1
+fi
+
 TYPE_NORMAL_ACCOUNT=0
 n="D6F1CFBF4D9F70710527E1B1911635460B1FF9AB7C202294D04A6F135A906E90E2398123C234340A3CEA0E5EFDCB4BCF7C613A5A52B96F59871D8AB9D240ABD4481CCFD758EC3F2FDD54A1D4D56BFFD5C4A95810A8CA25E87FDC752EFA047DF4710C7D67CA025A2DC3EA59B09A9F2E3A41D4A7EFBB31C738B35FFAAA5C6F4E6F"
 e="10001"
@@ -155,10 +173,6 @@ is_speedup=0
 
 
 
-touch /var/state/fastdick
-uci -P /var/state set fastdick.pid=$$
-uci -P /var/state commit fastdick
-
 
 login_result=$(thunder_login)
 errno=$(json_read "$login_result" "errorCode")
@@ -167,7 +181,7 @@ if [ "$errno" -ne 0 ]
 	then
 	$(log "Login Failed, dump response json and exit")
 	$(log "$login_result")
-	exit
+	exit 1
 fi
 
 sessionID=$(json_read "$login_result" "sessionID")
@@ -175,16 +189,19 @@ if [ `echo -n "$sessionID" | wc -c` -ne 32 ]
 then
 	$(log "Login Failed, sessionID should be 32 chars, dump response json and exit")
 	$(log "$login_result")
-	exit
+	exit 1
 fi
+
 $(log "Login Success") 
 
 isVIP=$(json_read "$login_result" "isVip")
+
 if [ "$isVIP" -ne 1 ]
 then
 	$(log "Sorry you are not a VIP, exit") 
-	exit
+	exit 1
 fi
+
 $(log "You are a VIP, now preparing speedup")
 
 userID=$(json_read "$login_result" "userID")
@@ -195,7 +212,7 @@ if [ "$errno" -ne 0 ]
 then #mean's something not right
 	$(log "Fetching Server info failed, dump response json and exit") 
 	$(log "$info_json") 
-	exit
+	exit 1
 fi
 interface_ip=$(json_read "$info_json" "interface_ip")
 interface_port=$(json_read "$info_json" "interface_port")
@@ -208,7 +225,7 @@ can_upgrade=$(json_read "$speedup_check" "can_upgrade")
 if [ "$can_upgrade" -ne 1 ]
 then
 	$(log "Sorry Your network doesn't support speedup, Aborting") 
-	exit
+	exit 1
 fi
 
 # now let's speedup
@@ -224,7 +241,7 @@ if [ "$status" -eq 0 ]
 		$(log "Speedup failed, dump response json and exit") 
 		is_speedup=0
 		$(log "$speedup_result") 
-		exit
+		exit 1
 	fi
 while true; do
 	sleep 295
@@ -243,7 +260,7 @@ while true; do
         else
             $(log "Re-speedup failed, dump response json, dump response json and exit") 
             $(log "$speedup_result") 
-			exit
+			exit 1
         fi
 
 	else
@@ -257,7 +274,7 @@ while true; do
         else
         	$(log "Keepalive failed, dump response json, dump response json and exit") 
             $(log "$speedup_result") 
-			exit
+			exit 1
 	    fi
 	fi
 done

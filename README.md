@@ -52,7 +52,7 @@
     
 使用方法（luci）：
 
-https://github.com/zz090923610/thunder-fastNiao/wiki/%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95%EF%BC%88luci%EF%BC%89%EF%BC%9A
+https://github.com/zz090923610/thunder-fastNiao/wiki/Manual-(LUCI):
 
 日志返回结果简介及问题判断： https://github.com/zz090923610/thunder-fastNiao/wiki/Log-Message
 

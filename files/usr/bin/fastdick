@@ -22,33 +22,35 @@ json_read()
 generate_pwd_rsa_hex()
 {
 	$(log "Generating PWD RSA HEX")
-	#first, encoding passwd using rsa
-	a=`echo -n "$passwd_md5" | openssl rsautl -raw -pubin -inkey /etc/thunder.key  -hexdump | tr -d " " | tr [a-z] [A-Z]`
-	for pos in 5 60 115 170 225 280 335 390
-	do
-		pwd_rsa_hex="$pwd_rsa_hex"${a:$pos:16}${a:$(($pos+17)):16}
-	done
-	echo -n "$pwd_rsa_hex"
+    #first, encoding passwd using rsa
+    a=`echo "$passwd_md5" | openssl rsautl -raw -pubin -inkey /etc/thunder.key  -hexdump | tr [a-z] [A-Z]`
+    a=`echo $a | grep -o '00[0-9]0 \- \([A-Z0-9]\{2\}[- ]\)\{16\}' | sed 's/00[0-9]0 - //g' | tr -d " \-\n"`
+
+    echo -n "$a"
+
 }
 
 
 get_wrap_wan_macaddr()
 {
 	# check wan
+ 	wan=`cat /var/state/network | grep -o "[a-z]*wan.up=[\'\s]*1[\'\s]*" | grep -o "[a-zA-Z0-9]*\." | tr -d '.'`
 
+	if [ $wan = "wwan" ] 
+	then
+		wan_iface=`uci -P /var/state get network.wwan.ifname 2>/dev/null`
+	else
+		wan_iface=`uci -P /var/state get network.$wan.device 2>/dev/null`
+	fi
+	wan_mac="$(ifconfig "$wan_iface" | awk '/HWaddr/ { print $5 }') 2>/dev/null"
 
-	wan_iface=`uci -P /var/state get network.wan.device`
-	wan_mac="$(ifconfig "$wan_iface" | awk '/HWaddr/ { print $5 }')"
 	if [ `echo -n "$wan_mac" | tr -d ':' | wc -c` -ne 12  ]
 		then
-		wan_mac="00:11:22:33:44:55"
+		wan_mac="$(ifconfig br-lan | awk '/HWaddr/ { print $5 }') 2>/dev/null"
 	fi
 	
-
-
-
 	if [ `echo -n "$wan_mac" | tr -d ':' | wc -c` -ne 12  ]
-		then
+	then
 		wan_mac="00:11:22:33:44:55"
 	fi
 	wrap_wan_mac=`echo -n "$wan_mac" | tr -d ':'`004V

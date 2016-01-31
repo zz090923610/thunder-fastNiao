@@ -51,6 +51,10 @@ define Package/thunder-fastdick/install
 
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/i18n
 	$(INSTALL_CONF) ./files/usr/lib/lua/luci/i18n/thunder-fastniao.zh-cn.lmo $(1)/usr/lib/lua/luci/i18n/
+
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
+	$(INSTALL_BIN) ./files/etc/hotplug.d/iface/* $(1)/etc/hotplug.d/iface/
+
 endef
 define Package/thunder-fastdick/preinst
 #!/bin/sh

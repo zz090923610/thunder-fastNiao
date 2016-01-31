@@ -1,0 +1,15 @@
+#!/bin/sh
+
+[ "$ACTION" = ifup ] && {
+  logger -t Thunder fastdick reload due to Device: $DEVICE Action: $ACTION ;
+
+  /etc/init.d/fastdick stop && sleep 2;
+  /etc/init.d/fastdick start;
+}
+
+[ "$ACTION" = ifdown ] && {
+  logger -t Thunder fastdick stop due to Device: $DEVICE Action: $ACTION ;
+
+  /etc/init.d/fastdick stop;
+
+}

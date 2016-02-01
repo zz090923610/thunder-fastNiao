@@ -35,13 +35,11 @@ check_kill_exist_instance()
 				then
 				continue
 			fi
-			echo "Stop service fastdick $pid"
 			kill "$pid"
 			for cpid in [0-9]*
 			do
 				if grep "PPid:	$pid" $cpid/status &>/dev/null
 				then
-				    echo "Stop child process $cpid"
 				    name=`cat $cpid/status | grep "Name:" | sed 's/Name://' | tr -d ' \n\t'`
 				    if [ "$name" = "sleep" ]
 				    then
@@ -291,15 +289,20 @@ speedup_result=$(speed_up_api "upgrade" "$userID" "$sessionID")
 status=$(json_read "$speedup_result" "errno")
 if [ "$status" -eq 0 ]
 	then
-		$(log "Speedup success") 
-		is_speedup=1
-	else
-		$(log "Speedup failed, dump response json and exit") 
-		is_speedup=0
-		$(log "$speedup_result") 
-		$(json_dump "$speedup_result")
-		exit 1
-	fi
+	$(log "Speedup success") 
+	is_speedup=1
+
+elif [ "$status" -eq 812 ]
+	then
+	$(log "Already Speedup") 
+	is_speedup=1
+else
+	$(log "Speedup failed, dump response json and exit") 
+	is_speedup=0
+	$(log "$speedup_result") 
+	$(json_dump "$speedup_result")
+	exit 1
+fi
 while true; do
 	sleep 295
 	if [ "$loop" -eq 5 ]
@@ -307,13 +310,17 @@ while true; do
 		$(flush_log)
 		loop=0
 		speedup_result=$(speed_up_api "recover" "$userID" "$sessionID")
-		sleep 5
+		sleep 10
 		speedup_result=$(speed_up_api "upgrade" "$userID" "$sessionID")
         status=$(json_read "$speedup_result" "errno")
         if [ "$status" -eq 0 ]
 	    then
             $(log "Re-speedup success") 
-	    is_speedup=1
+	    	is_speedup=1
+	    elif [ "$status" -eq 812 ]
+		then
+			$(log "Already Speedup") 
+			is_speedup=1
         else
             $(log "Re-speedup failed, dump response json, dump response json and exit") 
             $(log "$speedup_result") 

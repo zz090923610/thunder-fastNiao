@@ -18,6 +18,10 @@ json_read()
 	echo -n "$value"
 
 }
+json_dump()
+{
+	echo "$1" >>/tmp/thunder_fastdick_json
+}
 
 generate_pwd_rsa_hex()
 {
@@ -192,18 +196,21 @@ errno=$(json_read "$login_result" "errorCode")
 
 if [ "$errno" -ne 0 ]
 	then
-	$(log "Login Failed, dump response json and exit")
+	$(log "Login Failed, maybe wrong username or password, dump response json and exit")
 	$(log "$login_result")
+	$(json_dump "$login_result")
 	exit 1
 fi
 
 sessionID=$(json_read "$login_result" "sessionID")
-#if [ `echo -n "$sessionID" | wc -c` -ne 32 ]
-#then
-#	$(log "Login Failed, sessionID should be 32 chars, dump response json and exit")
-#	$(log "$login_result")
-#	exit 1
-#fi
+
+if [ `echo -n "$sessionID" | wc -c` -e 0 ]
+then
+	$(log "Login Failed, sessionID should not be empty, maybe is issue #2 500 Internal Error?")
+	$(log "$login_result")
+	$(json_dump "$login_result")
+	exit 1
+fi
 
 $(log "Login Success") 
 
@@ -212,6 +219,7 @@ isVIP=$(json_read "$login_result" "isVip")
 if [ "$isVIP" -ne 1 ]
 then
 	$(log "Sorry you are not a VIP, exit") 
+	$(json_dump "$login_result")
 	exit 1
 fi
 
@@ -225,6 +233,7 @@ if [ "$errno" -ne 0 ]
 then #mean's something not right
 	$(log "Fetching Server info failed, dump response json and exit") 
 	$(log "$info_json") 
+	$(json_dump "$info_json")
 	exit 1
 fi
 interface_ip=$(json_read "$info_json" "interface_ip")
@@ -238,6 +247,7 @@ can_upgrade=$(json_read "$speedup_check" "can_upgrade")
 if [ "$can_upgrade" -ne 1 ]
 then
 	$(log "Sorry Your network doesn't support speedup, Aborting") 
+	$(json_dump "$speedup_check")
 	exit 1
 fi
 
@@ -254,6 +264,7 @@ if [ "$status" -eq 0 ]
 		$(log "Speedup failed, dump response json and exit") 
 		is_speedup=0
 		$(log "$speedup_result") 
+		$(json_dump "$speedup_result")
 		exit 1
 	fi
 while true; do
@@ -273,6 +284,7 @@ while true; do
         else
             $(log "Re-speedup failed, dump response json, dump response json and exit") 
             $(log "$speedup_result") 
+            $(json_dump "$speedup_result")
 			exit 1
         fi
 
@@ -287,6 +299,7 @@ while true; do
         else
         	$(log "Keepalive failed, dump response json, dump response json and exit") 
             $(log "$speedup_result") 
+            $(json_dump "$speedup_result")
 			exit 1
 	    fi
 	fi

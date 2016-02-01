@@ -32,7 +32,7 @@ stop_service()
 				continue
 			fi
 			echo "Stop service fastdick $pid"
-			#kill "$pid"
+			kill "$pid"
 			for cpid in [0-9]*
 			do
 				if grep "PPid:	$pid" $cpid/status &>/dev/null

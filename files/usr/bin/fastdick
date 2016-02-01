@@ -23,6 +23,38 @@ json_dump()
 	echo "$1" >>/tmp/thunder_fastdick_json
 }
 
+
+check_kill_exist_instance()
+{
+	cd /proc
+	for pid in [0-9]*
+	do
+		if grep "Name:	fastdick" $pid/status &>/dev/null
+			then
+			if [ "$pid" -eq "$$" ]
+				then
+				continue
+			fi
+			echo "Stop service fastdick $pid"
+			kill "$pid"
+			for cpid in [0-9]*
+			do
+				if grep "PPid:	$pid" $cpid/status &>/dev/null
+				then
+				    echo "Stop child process $cpid"
+				    name=`cat $cpid/status | grep "Name:" | sed 's/Name://' | tr -d ' \n\t'`
+				    if [ "$name" = "sleep" ]
+				    then
+					    kill $cpid
+				    fi
+				fi
+			done
+			sleep 10
+		fi
+	done
+}
+
+
 generate_pwd_rsa_hex()
 {
 	$(log "Generating PWD RSA HEX")
@@ -165,6 +197,7 @@ if [ `echo -n "$name" | wc -c` -eq 0 -o `echo -n "$passwd" | wc -c` -eq 0 ]
 	exit 1
 fi
 
+$(check_kill_exist_instance)
 
 # calculate passwd_md5
 $(log "Generating passwd md5") 

@@ -2,7 +2,7 @@
 一个原生 OpenWrt 环境下的纯 ash 脚本实现的迅雷快鸟客户端。
 
 根据 https://github.com/fffonion/Xunlei-FastDick 的项目重写。
-
+ 
 适用条件：
 
 1，迅雷快鸟的付费会员（没付费的就别想了，这只是个客户端不负责帮你们黑出付费会员的加速权限）。

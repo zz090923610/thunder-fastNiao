@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/ash -x
 
 # Writen by zz090923610
 # Not for any kind of commercial use.
@@ -126,12 +126,13 @@ echo -n "$body" > /tmp/thunder_req_body
 	login_header='-H "Content-Type:" \
 				  -H "Connection:Keep-Alive" \
 				  -H "Accept-Encoding:gzip" \
-				  -H "User-Agent:android-async-http/1.4.3 (http://loopj.com/android-async-http)"'
+				  -H "android-async-http/1.4.3 (http://loopj.com/android-async-http)"'
 	$(log "Trying login")
-	login_result=`curl --insecure "$login_header" \
+	login_result=`curl -A "User-Agent: swjsq/1.7.1" --insecure "$login_header" \
 --data @/tmp/thunder_req_body "$url_login" 2>/dev/null`
 	rm -f /tmp/thunder_req_body 2>/dev/null
 	echo -n "$login_result"
+
 }
 
 speed_up_api()# 1,command;2,userID;3,sessionID
@@ -143,8 +144,8 @@ speed_up_api()# 1,command;2,userID;3,sessionID
 	api_header='-H "Content-Type:" \
 			"Connection: Keep-Alive" \
 			"Accept-Encoding: gzip" \
-    			"User-Agent: Dalvik/2.1.0 (Linux; U; Android 5.0.1; SmallRice Build/LRX22C)"'
-	api_result=`curl --insecure "$api_header" "$api_url" 2>/dev/null`
+    			"User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 5.0.1; SmallRice Build/LRX22C)"'
+	api_result=`curl  -A "User-Agent: swjsq/1.7.1" --insecure "$api_header" "$api_url" 2>/dev/null`
 	echo -n "$api_result"
 }
 

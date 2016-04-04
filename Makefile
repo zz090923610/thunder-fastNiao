@@ -9,7 +9,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=thunder-fastdick
-PKG_VERSION:=0.6
+PKG_VERSION:=1.0
 PKG_RELEASE:=0
 PKG_MAINTAINER:=Zhao Zhang <zhao.zhang.glacier@gmail.com>
 PKG_LICENSE:=GPLv2
@@ -19,7 +19,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/thunder-fastdick
    SECTION:=thunder
    CATEGORY:=thunder
-   DEPENDS:=++openssl-util +curl
+   DEPENDS:=+openssl-util +curl
    TITLE:=Xunlei Kuainiao OpenWrt Client
    MAINTAINER:=Zhao Zhang <zhao.zhang.glacier@gmail.com>
    PKGARCH:=all
